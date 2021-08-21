@@ -24,7 +24,7 @@ pyrogram
 python-dotenv
 python-magic
 python-telegram-bot
-pytz
+qbittorrent-api
 requests
 speedtest-cli
 telegraph
