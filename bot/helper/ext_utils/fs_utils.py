@@ -1,5 +1,5 @@
 import sys
-from bot import aria2, LOGGER, DOWNLOAD_DIR, get_client
+from bot import aria2, LOGGER, DOWNLOAD_DIR
 import shutil
 import os
 import pathlib

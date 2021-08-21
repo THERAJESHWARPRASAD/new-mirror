@@ -13,21 +13,20 @@ import time
 from telegram.error import BadRequest, Unauthorized
 from telegram import ParseMode, BotCommand
 from telegram.ext import CommandHandler
-from wserver import start_server_async
-from bot import bot, dispatcher, updater, botStartTime, IGNORE_PENDING_REQUESTS, IS_VPS, SERVER_PORT
+from bot import bot, dispatcher, updater, botStartTime, IGNORE_PENDING_REQUESTS, TIMEZONE, RESTARTED_GROUP_ID
 from bot.helper.ext_utils import fs_utils
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import *
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time
 from .helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper import button_build
-from .modules import authorize, list, cancel_mirror, mirror_status, mirror, clone, watch, delete, count
+from .modules import authorize, list, cancel_mirror, mirror_status, mirror, clone, watch, delete, usage, count
 now=datetime.now(pytz.timezone(f'{TIMEZONE}'))
 
 
 def stats(update, context):
     currentTime = get_readable_time(time.time() - botStartTime)
-    current = now.strftime('\n📅 Date: %d/%m/%Y\n⏲️ Time: %I:%M%P\n🌏 Country: 🇲🇾')
+    current = now.strftime('%d/%m/%Y %I:%M:%S %p')
     total, used, free = shutil.disk_usage('.')
     total = get_readable_file_size(total)
     used = get_readable_file_size(used)
@@ -37,16 +36,16 @@ def stats(update, context):
     cpuUsage = psutil.cpu_percent(interval=0.5)
     memory = psutil.virtual_memory().percent
     disk = psutil.disk_usage('/').percent
-    stats = f'<b>ℹ️ Bot Uptime:</b> {currentTime}\n' \
-            f'<b>\n▶️ Start Time ▶️</b> {current}\n\n' \
-            f'<b>💿 Disk Space:</b> {total}\n' \
-            f'<b>📀 Used:</b> {used}\n' \
-            f'<b>🕊️ Free:</b> {free}\n\n' \
-            f'📊Data Usage📊\n<b>📤 Upload:</b> {sent}\n' \
-            f'<b>📥 Download:</b> {recv}\n\n' \
-            f'<b>🖥️ CPU:</b> {cpuUsage}%\n' \
-            f'<b>🧮 RAM:</b> {memory}%\n' \
-            f'<b>💽 DISK:</b> {disk}%'
+    stats = f'<b>Bot Uptime:</b> {currentTime}\n' \
+            f'<b>Start Time:</b> {current}\n' \
+            f'<b>Total Disk Space:</b> {total}\n' \
+            f'<b>Used:</b> {used}  ' \
+            f'<b>Free:</b> {free}\n\n' \
+            f'📊Data Usage📊\n<b>Upload:</b> {sent}\n' \
+            f'<b>Download:</b> {recv}\n\n' \
+            f'<b>CPU:</b> {cpuUsage}%\n' \
+            f'<b>RAM:</b> {memory}%\n' \
+            f'<b>DISK:</b> {disk}%'
     sendMessage(stats, context.bot, update)
 
 
@@ -67,7 +66,7 @@ Type /{BotCommands.HelpCommand} to get a list of available commands
         else :
             sendMarkup(start_string, context.bot, update, reply_markup)
     else :
-        sendMarkup(f"Oops! not a Authorized user.\nPlease contact me @arata74", context.bot, update, reply_markup)
+        sendMessage(f"Oops! not a Authorized user.", context.bot, update)
 
 
 def restart(update, context):
@@ -79,14 +78,6 @@ def restart(update, context):
     fs_utils.clean_all()
     os.execl(executable, executable, "-m", "bot")
 
-
-def ping(update, context):
-    start_time = int(round(time.time() * 1000))
-    reply = sendMessage("Starting Ping", context.bot, update)
-    end_time = int(round(time.time() * 1000))
-    editMessage(f'{end_time - start_time} ms', reply)
-
-
 def log(update, context):
     sendLogFile(context.bot, update)
 
@@ -96,10 +87,6 @@ def bot_help(update, context):
 /{BotCommands.HelpCommand}: To get this message
 
 /{BotCommands.MirrorCommand} [download_url][magnet_link]: Start mirroring the link to Google Drive
-
-<code>/{BotCommands.MirrorCommand} qb</code> to mirror with qBittorrent
-
-<code>/{BotCommands.MirrorCommand} qbs</code> to select files before downloading
 
 /{BotCommands.TarMirrorCommand} [download_url][magnet_link]: Start mirroring and upload the archived (.tar) version of the download
 
@@ -147,10 +134,6 @@ def bot_help(update, context):
 
 /{BotCommands.MirrorCommand} [download_url][magnet_link]: Start mirroring the link to Google Drive
 
-<code>/{BotCommands.MirrorCommand} qb</code> to mirror with qBittorrent
-
-<code>/{BotCommands.MirrorCommand} qbs</code> to select files before downloading
-
 /{BotCommands.TarMirrorCommand} [download_url][magnet_link]: Start mirroring and upload the archived (.tar) version of the download
 
 /{BotCommands.ZipMirrorCommand} [download_url][magnet_link]: Start mirroring and upload the archived (.zip) version of the download
@@ -178,7 +161,6 @@ def bot_help(update, context):
         sendMessage(help_string_adm, context.bot, update)
     else:
         sendMessage(help_string, context.bot, update)
-
 
 botcmds = [
         (f'{BotCommands.HelpCommand}','Get Detailed Help'),
@@ -235,21 +217,15 @@ def main():
             LOGGER.warning(e.message)            
             
     fs_utils.start_cleanup()
-
-    if IS_VPS:
-        asyncio.get_event_loop().run_until_complete(start_server_async(SERVER_PORT))
-
     # Check if the bot is restarting
     if os.path.isfile(".restartmsg"):
         with open(".restartmsg") as f:
             chat_id, msg_id = map(int, f)
-        bot.edit_message_text("✅ Restarted successfully!", chat_id, msg_id)
+        bot.edit_message_text("🔄️ Restarted successfully!", chat_id, msg_id)
         os.remove(".restartmsg")
     bot.set_my_commands(botcmds)
 
     start_handler = CommandHandler(BotCommands.StartCommand, start, run_async=True)
-    ping_handler = CommandHandler(BotCommands.PingCommand, ping,
-                                  filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
     restart_handler = CommandHandler(BotCommands.RestartCommand, restart,
                                      filters=CustomFilters.owner_filter | CustomFilters.sudo_user, run_async=True)
     help_handler = CommandHandler(BotCommands.HelpCommand,
@@ -258,7 +234,6 @@ def main():
                                    stats, filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
     log_handler = CommandHandler(BotCommands.LogCommand, log, filters=CustomFilters.owner_filter | CustomFilters.sudo_user, run_async=True)
     dispatcher.add_handler(start_handler)
-    dispatcher.add_handler(ping_handler)
     dispatcher.add_handler(restart_handler)
     dispatcher.add_handler(help_handler)
     dispatcher.add_handler(stats_handler)

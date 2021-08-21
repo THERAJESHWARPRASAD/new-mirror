@@ -442,21 +442,6 @@
         "value": "weebhelp",
         "required": true
 	  },
-      "IS_VPS": {
-        "description": "Only for VPS, fill False.",
-        "value": "False",
-        "required": false
-	  },
-      "SERVER_PORT": {
-        "description": "Only for VPS, no need to fill it.",
-        "value": "",
-        "required": false
-	  },
-      "BASE_URL_OF_BOT": {
-        "description": "Enter your Heroku app link to avoid the app from sleeping and to make it work with Torrent selection",
-        "value": "https://yourappname.herokuapp.com",
-        "required": true
-	  },
       "ZIP_BOT": {
         "description": "zip commands",
         "value": "zip",
@@ -469,7 +454,7 @@
       }
     ],
     "formation": {
-            "web": {
+            "workers": {
                 "quantity": 1,
                 "size": "free"
             }

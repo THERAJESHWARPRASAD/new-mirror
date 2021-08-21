@@ -28,11 +28,10 @@ class MirrorStatus:
     STATUS_FAILED = "🚫 ғᴀɪʟᴇᴅ"
     STATUS_ARCHIVING = "🔐 ᴀʀᴄʜɪᴠɪɴɢ"
     STATUS_EXTRACTING = "📂 ᴇxᴛʀᴀᴄᴛɪɴɢ"
-    STATUS_PAUSE = "⏸️ ᴘᴀᴜsᴇᴅ"
 
 
 PROGRESS_MAX_SIZE = 100 // 8
-PROGRESS_INCOMPLETE = ['▏', '▎', '▍', '▌', '▋', '▊', '▉']
+# PROGRESS_INCOMPLETE = ['▏', '▎', '▍', '▌', '▋', '▊', '▉']
 
 SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
 
@@ -137,20 +136,8 @@ def get_readable_message():
                         msg += f"\n<b>👥 User:</b> <b>{download.message.from_user.first_name}</b>\n<b>⚠️ Warn:</b><code>/warn {download.message.from_user.id}</code>\n<b>⛔ Cancel:</b> <code>/{BotCommands.CancelMirror} {download.gid()}</code>"
                     except:
                         pass
-                    try:
-                        if f"{download.aria_download().connections}" is None:
-                            msg += f"\n<b>⚙️ Engine: Aria2</b>\n<b>📶:</b> {download.aria_download().connections}"
-                    except:
-                        pass
-                    try:
-                        msg += f"\n<b>⚙️ Engine: Aria2</b>\n<b>🌍:</b> {download.aria_download().connections} | <b>🌱:</b> {download.aria_download().num_seeders}"
-                    except:
-                        pass
-                    try:
-                        msg += f"\n<b>⚙️ Engine: ǫʙɪᴛᴛᴏʀʀᴇɴᴛ</b>\n<b>🌱:</b> {download.torrent_info().num_seeds}" \
-                            f" | <b>🌏:</b> {download.torrent_info().num_leechs}"
-                    except:
-                        pass
+                    msg += f'\n<b>👥 User:</b> <b>{download.message.from_user.first_name}</b>\n<b>⚠️ Warn:</b><code>/warn {download.message.from_user.id}</code>'
+                    msg += f"\n<b>⛔ Cancel:</b> <code>/{BotCommands.CancelMirror} {download.gid()}</code>"
                 msg += "\n\n"
                 if STATUS_LIMIT is not None:
                     if INDEX >= COUNT + STATUS_LIMIT:
